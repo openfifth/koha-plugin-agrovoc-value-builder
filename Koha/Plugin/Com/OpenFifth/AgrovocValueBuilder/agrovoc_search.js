@@ -1,0 +1,523 @@
+const API_URL = AGROVOC_PLUGIN_URL;
+
+var selectedTerms = [];
+var globalVocid = null;
+var globalLang = null;
+
+function searchAPI() {
+    var searchTerm = $('#searchTerm').val();
+    var selectedLang = $('input[name="lang"]:checked').val();
+    var matchType = $('input[name="matchType"]:checked').val();
+
+    // Check if search term is empty
+    if (!searchTerm.trim()) {
+        alert("Search term cannot be empty.");
+        return;
+    }
+
+    var apiUrl = API_URL + '&action=search&searchTerm=' + encodeURIComponent(searchTerm) + '&lang=' + selectedLang + '&matchType=' + matchType;
+
+    // Show loading indicator
+    $('#loadingIndicator').show();
+
+    fetch(apiUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            displayResults(data);
+            // Hide loading indicator
+            $('#loadingIndicator').hide();
+        })
+        .catch(error => {
+            var errorMessage = 'Error occurred while searching the API.\n';
+            errorMessage += 'Error: ' + error.message + '\n';
+            alert(errorMessage);
+            // Hide loading indicator
+            $('#loadingIndicator').hide();
+        });
+}
+
+
+function updateSelectedTermsList() {
+    var selectedTermsList = $('#selected-terms-list');
+    selectedTermsList.empty();
+    selectedTerms.forEach(function(termObj, index) {
+        var listItem = $('<li>').addClass('selected-term-item').text(termObj.label);
+        var deleteButton = $('<button>').html('&times;').addClass('delete-button'); // Using Unicode character for cross
+
+        // Add event listener to the delete button
+        deleteButton.on('click', function() {
+            selectedTerms.splice(index, 1); // Remove the term from the array
+            updateSelectedTermsList(); // Update the list
+        });
+
+        listItem.append(deleteButton);
+        selectedTermsList.append(listItem);
+    });
+}
+function fetchAndDisplayConcepts(vocid, uri, lang, type, title) {
+    var detailsView = $('#details-view');
+    var section = $('<div>').addClass('concept-section').attr('id', `${type}-section`);
+    var loadingIndicator = $('<div>').addClass('loading-indicator').text(`Loading ${title.toLowerCase()}...`);
+    section.append(loadingIndicator);
+    detailsView.append(section);
+
+    var apiUrl = `${API_URL}&action=fetch_concepts&vocid=${encodeURIComponent(vocid)}&uri=${encodeURIComponent(uri)}&lang=${encodeURIComponent(lang)}&type=${encodeURIComponent(type)}`;
+
+    $.get(apiUrl, function(data) {
+        loadingIndicator.remove(); // Remove loading indicator
+
+        if (data[type] && data[type].length > 0) {
+            section.append($('<h3>').text(title));
+            var conceptList = $('<ul>');
+            data[type].forEach(function(concept) {
+                var listItem = $('<li>').text(concept.prefLabel).addClass('concept-item');
+                var selectButton = $('<button>').text('Select').addClass('select-button');
+
+                // Add event listener to the select button
+                selectButton.on('click', function(event) {
+                    event.stopPropagation(); // Prevent the click event from bubbling up to the listItem
+                    if (!selectedTerms.some(termObj => termObj.label === concept.prefLabel)) {
+                        selectedTerms.push({
+                            label: concept.prefLabel,
+                            uri: concept.uri,
+                            lang: globalLang
+                        });
+                        updateSelectedTermsList();
+                    } else {
+                        alert(concept.prefLabel + ' is already in the list.');
+                    }
+                });
+
+                // Add event listener to the list item to fetch related concepts
+                listItem.on('click', function() {
+                    displayDetails(concept);
+                });
+
+                listItem.append(selectButton);
+                conceptList.append(listItem);
+            });
+            section.append(conceptList);
+        } else {
+            section.append($('<p>').text(`No ${title.toLowerCase()} found.`));
+        }
+    });
+}
+
+function displayDetails(result) {
+    var detailsView = $('#details-view');
+    detailsView.empty();
+
+    // Add the current concept at the top of the details section
+    var currentConcept = $('<div>').addClass('current-concept');
+    var currentConceptLabel = $('<span>').text(`Current Concept: ${result.prefLabel}`);
+    var selectButton = $('<button>').text('Select').addClass('select-button');
+
+    // Add event listener to the select button
+    selectButton.on('click', function(event) {
+        event.stopPropagation(); // Prevent the click event from bubbling up to the currentConcept
+        if (!selectedTerms.some(termObj => termObj.label === result.prefLabel)) {
+            selectedTerms.push({
+                label: result.prefLabel,
+                uri: result.uri,
+                lang: globalLang
+            });
+            updateSelectedTermsList();
+        } else {
+            alert(result.prefLabel + ' is already in the list.');
+        }
+    });
+
+    currentConcept.append(currentConceptLabel);
+    currentConcept.append(selectButton);
+    detailsView.append(currentConcept);
+
+    var vocid = globalVocid; // Use global vocid
+    var uri = result.uri;
+    var lang = globalLang; // Use global lang
+
+    fetchAndDisplayConcepts(vocid, uri, lang, 'broader', 'Broader Concepts');
+    fetchAndDisplayConcepts(vocid, uri, lang, 'narrower', 'Narrower Concepts');
+    fetchAndDisplayConcepts(vocid, uri, lang, 'related', 'Related Concepts');
+}
+
+function displayResults(data) {
+    var resultsList = $('#results-list');
+    resultsList.empty();
+
+    if (data.results && data.results.length > 0) {
+        data.results.forEach(function(result, index) {
+            var resultItem = $('<div>').addClass('result-item');
+            var resultLabel = $('<span>').text(result.prefLabel);
+            var selectButton = $('<button>').text('Select').addClass('select-button');
+
+            selectButton.on('click', function(event) {
+                globalVocid = result.vocab;
+                globalLang = result.lang;
+                event.stopPropagation(); // Prevent the click event from bubbling up to the resultItem
+                if (!selectedTerms.some(termObj => termObj.label === result.prefLabel)) {
+                    selectedTerms.push({
+                        label: result.prefLabel,
+                        uri: result.uri,
+                        lang: globalLang
+                    });
+                    updateSelectedTermsList();
+                } else {
+                    alert(result.prefLabel + ' is already in the list.');
+                }
+            });
+
+            resultItem.append(resultLabel);
+            resultItem.append(selectButton);
+            resultItem.on('click', function() {
+                $('.result-item').removeClass('selected');
+                globalVocid = result.vocab;
+                globalLang = result.lang;
+                resultItem.addClass('selected');
+                displayDetails(result);
+            });
+            resultsList.append(resultItem);
+        });
+    } else {
+        resultsList.append($('<p>').text('No results found.'));
+    }
+}
+
+
+function AddEventHandlers (oldcontrol, newcontrol, newinputid ) {
+// This function is a helper for CloneField and CloneSubfield.
+// It adds the event handlers from oldcontrol to newcontrol.
+// newinputid is the id attribute of the cloned controlling input field
+// Note: This code depends on the jQuery data for events; this structure
+// is moved to _data as of jQuery 1.8.
+    var ev= $(oldcontrol).data('events');
+    if(typeof ev != 'undefined') {
+        $.each(ev, function(prop,val) {
+            $.each(val, function(prop2,val2) {
+                $(newcontrol).off( val2.type );
+                $(newcontrol).on( val2.type, {id: newinputid}, val2.handler );
+            });
+        });
+    }
+}
+        // Function to get query parameter by name
+        function getQueryParam(name) {
+            var urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+ // Function to clone field using index from URL
+        function createFieldFromURL() {
+            var index = getQueryParam('li_id');
+            if (index) {
+                termToTag(index);
+            } else {
+                alert('No index parameter found in the URL.');
+            }
+        }
+
+function CreateKey() {
+    return parseInt(Math.random() * 100000);
+}
+// Minor modified CloneField from Koha cataloging.js - Updates target to use 'opener' to refer to original window
+function CloneField(index) {
+    var original = opener.document.getElementById(index); //original <li>
+    Select2Utils.removeSelect2($(original).find('select'));
+
+    var clone = original.cloneNode(true);
+    var new_key = CreateKey();
+    var new_id  = original.getAttribute('id')+new_key;
+
+    clone.setAttribute('id',new_id); // setting a new id for the parent li
+
+    var divs = Array.from(clone.getElementsByTagName('li')).concat(Array.from(clone.getElementsByTagName('div')));
+
+    // if hide_marc, indicators are hidden fields
+    // setting a new name for the new indicator
+    for(var i=0; i < 2; i++) {
+        var indicator = clone.getElementsByTagName('input')[i];
+        indicator.setAttribute('name',indicator.getAttribute('name')+new_key);
+    }
+
+    // settings all subfields
+    var divslen = divs.length;
+    for( i=0; i < divslen ; i++ ){      // foreach div/li
+        if( divs[i].getAttribute("id") && divs[i].getAttribute("id").match(/^subfield/)){  // if it s a subfield
+
+            // set the attribute for the new 'li' subfields
+            divs[i].setAttribute('id',divs[i].getAttribute('id')+new_key);
+
+            var inputs   = divs[i].getElementsByTagName('input');
+            var id_input = "";
+            var olddiv;
+            var oldcontrol;
+
+            for( j = 0 ; j < inputs.length ; j++ ) {
+                if(inputs[j].getAttribute("id") && inputs[j].getAttribute("id").match(/^tag_/) ){
+                    inputs[j].value = "";
+                }
+            }
+            var textareas = divs[i].getElementsByTagName('textarea');
+            for( j = 0 ; j < textareas.length ; j++ ) {
+                if(textareas[j].getAttribute("id") && textareas[j].getAttribute("id").match(/^tag_/) ){
+                    textareas[j].value = "";
+                }
+            }
+            if( inputs.length > 0 ){
+                inputs[0].setAttribute('id',inputs[0].getAttribute('id')+new_key);
+                inputs[0].setAttribute('name',inputs[0].getAttribute('name')+new_key);
+
+                try {
+                    id_input = inputs[1].getAttribute('id')+new_key;
+                    inputs[1].setAttribute('id',id_input);
+                    inputs[1].setAttribute('name',inputs[1].getAttribute('name')+new_key);
+                } catch(e) {
+                    try{ // it s a select if it is not an input
+                        var selects = divs[i].getElementsByTagName('select');
+                        id_input = selects[0].getAttribute('id')+new_key;
+                        selects[0].setAttribute('id',id_input);
+                        selects[0].setAttribute('name',selects[0].getAttribute('name')+new_key);
+                    }catch(e2){ // it is a textarea if it s not a select or an input
+                        var textareas = divs[i].getElementsByTagName('textarea');
+                        if( textareas.length > 0 ){
+                            id_input = textareas[0].getAttribute('id')+new_key;
+                            textareas[0].setAttribute('id',id_input);
+                            textareas[0].setAttribute('name',textareas[0].getAttribute('name')+new_key);
+                        }
+                    }
+                }
+                if( $(inputs[1]).hasClass('framework_plugin') ) {
+                    olddiv= original.getElementsByTagName('li')[i];
+                    oldcontrol= olddiv.getElementsByTagName('input')[1];
+                    AddEventHandlers( oldcontrol,inputs[1],id_input );
+                }
+            }
+            // when cloning a subfield, re set its label too.
+            var labels = divs[i].getElementsByTagName('label');
+            labels[0].setAttribute('for', id_input);
+
+            // setting its '+' and '-' buttons
+            try {
+                var anchors = divs[i].getElementsByTagName('a');
+                for (var j = 0; j < anchors.length; j++) {
+                    if(anchors[j].getAttribute('class') == 'buttonPlus'){
+                        anchors[j].setAttribute('onclick',"CloneSubfield('" + divs[i].getAttribute('id') + "','" + advancedMARCEditor + "'); return false;");
+                    } else if (anchors[j].getAttribute('class') == 'buttonMinus') {
+                        anchors[j].setAttribute('onclick',"UnCloneField('" + divs[i].getAttribute('id') + "'); return false;");
+                    } else if (anchors[j].getAttribute('class') == 'buttonDot') {
+                        anchors[j].setAttribute('onclick',"openAgrovoc('" + divs[i].getAttribute('id') + "'); return false;");
+                    }
+                }
+            }
+            catch(e){
+                // do nothig if ButtonPlus & CloneButtonPlus don t exist.
+            }
+
+            // button ...
+            var spans=0;
+            try {
+                spans = divs[i].getElementsByTagName('a');
+            } catch(e) {
+                // no spans
+            }
+            if(spans){
+                var buttonDot;
+                if(!CloneButtonPlus){ // it s impossible to have  + ... (buttonDot AND buttonPlus)
+                    buttonDot = spans[0];
+                    if(buttonDot){
+                        // 2 possibilities :
+                        try{
+                            if( $(buttonDot).hasClass('framework_plugin') ) {
+                                olddiv= original.getElementsByTagName('li')[i];
+                                oldcontrol= olddiv.getElementsByTagName('a')[0];
+                                AddEventHandlers(oldcontrol,buttonDot,id_input);
+                            }
+                            try {
+                                // do not copy the script section.
+                                var script = spans[0].getElementsByTagName('script')[0];
+                                spans[0].removeChild(script);
+                            } catch(e) {
+                                // do nothing if there is no script
+                            }
+                        } catch(e){
+                            //
+                        }
+                    }
+                }
+            }
+
+        } else { // it's a indicator div
+            if ( divs[i].getAttribute("id") && divs[i].getAttribute('id').match(/^div_indicator/)) {
+
+                // setting a new id for the indicator div
+                divs[i].setAttribute('id',divs[i].getAttribute('id')+new_key);
+
+                inputs = divs[i].getElementsByTagName('input');
+                inputs[0].setAttribute('id',inputs[0].getAttribute('id')+new_key);
+                inputs[1].setAttribute('id',inputs[1].getAttribute('id')+new_key);
+
+                var CloneButtonPlus;
+                try {
+                    anchors = divs[i].getElementsByTagName('a');
+                    for ( j = 0; j < anchors.length; j++) {
+                        if (anchors[j].getAttribute('class') == 'buttonPlus') {
+                            anchors[j].setAttribute('onclick',"CloneField('" + new_id + "','" + hideMarc + "','" + advancedMARCEditor + "'); return false;");
+                        } else if (anchors[j].getAttribute('class') == 'buttonMinus') {
+                            anchors[j].setAttribute('onclick',"UnCloneField('" + new_id + "'); return false;");
+                        } else if (anchors[j].getAttribute('class') == 'expandfield') {
+                            anchors[j].setAttribute('onclick',"ExpandField('" + new_id + "'); return false;");
+                        } else if (anchors[j].getAttribute('class') == 'buttonPlus') {
+                            anchors[j].setAttribute('onclick',"openAgrovoc('" + new_id + "'); return false;");
+                        }
+                    }
+                }
+                catch(e){
+                    // do nothig CloneButtonPlus doesn't exist.
+                }
+
+            }
+        }
+    }
+
+    // insert this line on the page
+    original.parentNode.insertBefore(clone,original.nextSibling);
+
+    Select2Utils.initSelect2($(original).find('select'));
+    Select2Utils.initSelect2($(clone).find('select'));
+
+    return new_id;
+}
+// Copy functions from Koha cataloging.js.. not sure why we don't just load that and reference them here.. but..
+var current_select2;
+var Select2Utils = {
+    removeSelect2: function(selects) {
+        if ($.fn.select2) {
+            $(selects).each(function(){
+                $(this).select2('destroy');
+            });
+        }
+    },
+
+    initSelect2: function(selects) {
+        if ($.fn.select2) {
+            if ( window.CAN_user_parameters_manage_auth_values === undefined || ! CAN_user_parameters_manage_auth_values ) {
+                $(selects).select2().on("select2:clear", function () {
+                    $(this).on("select2:opening.cancelOpen", function (evt) {
+                        evt.preventDefault();
+                        $(this).off("select2:opening.cancelOpen");
+                    });
+                });
+            } else {
+                $(selects).each(function(){
+                    if ( !$(this).data("category") ) {
+                        $(this).select2().on("select2:clear", function () {
+                            $(this).on("select2:opening.cancelOpen", function (evt) {
+                                evt.preventDefault();
+                                $(this).off("select2:opening.cancelOpen");
+                            });
+                        });
+                    } else {
+                        $(this).select2({
+                            tags: true,
+                            createTag: function (tag) {
+                                return {
+                                    id: tag.term,
+                                    text: tag.term,
+                                    newTag: true
+                                };
+                            },
+                            templateResult: function(state) {
+                                if (state.newTag) {
+                                    return state.text + " " + __("(select to create)");
+                                }
+                                return state.text;
+                            }
+                        }).on("select2:select", function(e) {
+                            if(e.params.data.newTag){
+                                current_select2 = this;
+                                var category = $(this).data("category");
+                                $("#avCreate #new_av_category").html(category);
+                                $("#avCreate input[name='category']").val(category);
+                                $("#avCreate input[name='value']").val('');
+                                $("#avCreate input[name='description']").val(e.params.data.text);
+
+                                $(this).val($(this).find("option:first").val()).trigger('change');
+                                $('#avCreate').modal({show:true});
+                            }
+                        }).on("select2:clear", function () {
+                            $(this).on("select2:opening.cancelOpen", function (evt) {
+                                evt.preventDefault();
+
+                                $(this).off("select2:opening.cancelOpen");
+                            });
+                        });
+                    }
+                });
+            }
+        }
+    }
+};
+
+
+function termToTag(tagindex) {
+    var terms = selectedTerms.map(termObj => [termObj.label, termObj.uri, termObj.lang]);
+    addTerms2Rec(tagindex, terms);
+    if (opener && !opener.closed) {
+        opener.focus();
+    }
+    window.close();
+    return false;
+}
+
+function addTerms2Rec(index, terms) {
+    var idx = index;
+    for (var i = 0; i < terms.length; ) {
+        idx = CloneField(idx);
+        addTermWorker(idx, terms[i]);
+        i++;
+    }
+}
+
+
+function addTermWorker(index, termArr) {
+    var t = opener.document.getElementById(index);
+    var tagdata = index.split(/_/); // tagdata == tag XXX random
+    var inputs = t.getElementsByTagName('input');
+    var sfdaRegExp = new RegExp("^tag_" + tagdata[1] + "_subfield_a");
+    var sfd0RegExp = new RegExp("^tag_" + tagdata[1] + "_subfield_0");
+    var sfd9RegExp = new RegExp("^tag_" + tagdata[1] + "_subfield_9");
+    var sfd2RegExp = new RegExp("^tag_" + tagdata[1] + "_subfield_2");
+    var ind2RegExp = new RegExp("^tag_" + tagdata[1] + "_indicator2");
+
+    for (var i = 0; i < inputs.length; i++) {
+        if (inputs[i].name.match(sfdaRegExp)) {
+            inputs[i].value = termArr[0];
+        }
+        if (inputs[i].name.match(sfd0RegExp)) {
+            inputs[i].value = termArr[1];
+        }
+        if (inputs[i].name.match(sfd9RegExp)) {
+            // Extract the end section of the URI (the part after the last '_')
+            var uriParts = termArr[1].split('_');
+            inputs[i].value = uriParts[uriParts.length - 1];
+        }
+        if (inputs[i].name.match(sfd2RegExp)) {
+            var language;
+            if (termArr[2] === 'en') {
+                language = 'agrovoc';
+            } else if (termArr[2] === 'fr') {
+                language = 'agrovocf';
+            } else if (termArr[2] === 'es') {
+                language = 'agrovocs';
+            }
+            inputs[i].value = language;
+        }
+        if (inputs[i].name.match(ind2RegExp)) {
+            inputs[i].value = '7';
+        }
+    }
+}
+
