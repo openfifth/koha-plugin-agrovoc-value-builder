@@ -14,8 +14,24 @@ along with the comparison links — do not edit the heading or the links by hand
 
 ### Added
 
+- AGROVOC thesaurus value builder for MARC21 subject fields, ported from the
+  in-tree `marc21_field_650_agrovoc.pl` value builder.
+- "Replace field" workflow alongside the existing "Create new fields" workflow.
+- Concept browsing for broader, narrower, and related terms. Every term is a
+  link, so clicking one re-centres the detail panel on it.
+- Automated release support: version bump scripts, CHANGELOG promotion, and a
+  GitHub Actions workflow that tests against Koha main, stable, and oldstable.
+
 ### Changed
 
+- Requests to AGROVOC now use HTTPS instead of HTTP.
+- The popup uses the Koha staff interface styling instead of a standalone page.
+- Headings and labels say "term" rather than "concept", matching Koha's own
+  wording for broader, narrower, and related headings.
+
 ### Fixed
+
+- The popup no longer emits two `<title>` elements or a nested `<!DOCTYPE html>`.
+- `vocid` and the concept type are validated before they reach the AGROVOC URL.
 
 [Unreleased]: https://github.com/openfifth/koha-plugin-agrovoc-value-builder/compare/v0.0.0...HEAD
