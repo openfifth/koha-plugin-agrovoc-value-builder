@@ -117,6 +117,42 @@ jobs:
           export KTD_HOME=$(pwd)/../koha-testing-docker
           ktd --name agrovoc down || true
 
+  kpz:
+    name: Build kpz artifact
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout plugin code
+        uses: actions/checkout@v5
+
+      - name: Get Koha Version Branch Name
+        id: koha-version-oldstable
+        uses: "bywatersolutions/github-action-koha-get-version-by-label@v2"
+        with:
+          version-label: "oldstable"
+
+      - name: Read package.json
+        id: package
+        run: |
+          echo "plugin_path=$(jq -r '.plugin.pm_path' package.json)" >> $GITHUB_OUTPUT
+
+      - name: Build Koha Plugin kpz artifact
+        id: kpz
+        uses: "bywatersolutions/github-action-koha-plugin-create-kpz@master"
+        with:
+          release-version: ${{ github.ref_name }}
+          release-name: ${{ github.event.repository.name }}
+          minimum-version: ${{ steps.koha-version-oldstable.outputs.version-major-minor }}
+          plugin-module: ${{ steps.package.outputs.plugin_path }}
+
+      - name: Upload kpz artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-${{ github.ref_name }}
+          path: ${{ steps.kpz.outputs.filename }}
+          if-no-files-found: error
+
   release:
     needs: unit_tests
     if: startsWith(github.ref, 'refs/tags/v')
