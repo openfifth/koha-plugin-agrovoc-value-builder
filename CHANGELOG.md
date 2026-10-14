@@ -14,8 +14,20 @@ along with the comparison links — do not edit the heading or the links by hand
 
 ### Added
 
+- AGROVOC thesaurus value builder for MARC21 subject fields, ported from the
+  in-tree `marc21_field_650_agrovoc.pl` value builder. The popup, the workflow,
+  and the MARC output match the in-tree version.
+- Automated release support: version bump scripts, CHANGELOG promotion, and a
+  GitHub Actions workflow that tests against Koha main, stable, and oldstable.
+
 ### Changed
 
+- Requests to AGROVOC now use HTTPS instead of HTTP.
+- The popup is served through the plugin launcher instead of a script in the
+  Koha source tree.
+
 ### Fixed
+
+- `vocid` and the concept type are validated before they reach the AGROVOC URL.
 
 [Unreleased]: https://github.com/openfifth/koha-plugin-agrovoc-value-builder/compare/v0.0.0...HEAD
