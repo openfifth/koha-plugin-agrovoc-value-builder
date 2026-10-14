@@ -1,0 +1,158 @@
+.page-header {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.12) 0%, rgba(139, 195, 74, 0.12) 100%);
+    border-bottom: 3px solid #f8f9fa;
+    margin-bottom: 25px;
+    padding: 20px 15px;
+    border-radius: 8px 8px 0 0;
+}
+
+.main-heading {
+    margin: 0;
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 28px;
+}
+
+.search-form-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.search-label {
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.search-select {
+    min-width: 120px;
+    max-width: 140px;
+}
+
+.search-form-inline .select2-container {
+    width: auto !important;
+    min-width: 120px;
+    max-width: 140px;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.search-button {
+    white-space: nowrap;
+}
+
+.scroll-panel {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.selected-panel {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 15px;
+    background-color: #f8f9fa;
+}
+
+.result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.result-item.clickable {
+    cursor: pointer;
+}
+
+.result-item:hover {
+    background-color: #eef7ee;
+}
+
+.result-item.selected {
+    background-color: #d4edda;
+}
+
+.result-content,
+.concept-content {
+    flex: 1;
+    text-decoration: none;
+}
+
+.result-content:hover,
+.concept-content:hover,
+.result-content:focus,
+.concept-content:focus {
+    text-decoration: underline;
+}
+
+.concept-section {
+    margin-top: 12px;
+}
+
+.concept-section h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.concept-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.current-concept {
+    font-size: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #4caf50;
+}
+
+.selected-term {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.help-list,
+.workflow-list {
+    margin: 0 0 0 18px;
+    padding: 0;
+}
+
+.loading {
+    font-style: italic;
+    color: #666;
+}
+
+fieldset {
+    margin-bottom: 15px;
+}
+
+fieldset legend {
+    font-weight: 600;
+    color: #495057;
+}
+
+.btn + .btn {
+    margin-left: 5px;
+}
+
+body {
+    padding-bottom: 60px;
+}

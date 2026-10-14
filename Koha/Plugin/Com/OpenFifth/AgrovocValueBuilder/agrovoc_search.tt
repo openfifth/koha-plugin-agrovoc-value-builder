@@ -1,0 +1,108 @@
+[% USE raw %]
+[% PROCESS 'i18n.inc' %]
+[% INCLUDE 'doc-head-open.inc' %]
+<title>[% FILTER collapse %]
+    [% t("AGROVOC search") | html %] &rsaquo; [% t("Cataloging") | html %] &rsaquo; [% t("Koha") | html %]
+[% END %]</title>
+[% INCLUDE 'doc-head-close.inc' %]
+</head>
+
+<body id="cat_agrovoc_search" class="cat value_builder">
+
+<div class="page-header">
+    <h1 class="main-heading">[% t("AGROVOC thesaurus search") | html %]</h1>
+</div>
+
+<form method="get" name="f_pop" id="f_pop" onsubmit="return false;">
+
+    <div class="page-section">
+        <fieldset class="brief">
+            <legend>[% t("Search") | html %]</legend>
+            <div class="search-form-inline">
+                <label for="searchTerm" class="search-label">[% t("Term") | html %]:</label>
+                <select id="matchType" name="matchType" class="search-select form-select">
+                    <option value="starts_with" selected="selected">[% t("Starts with") | html %]</option>
+                    <option value="exact">[% t("Exact match") | html %]</option>
+                    <option value="contains">[% t("Contains") | html %]</option>
+                </select>
+                <select id="lang" name="lang" class="search-select form-select">
+                    <option value="en" selected="selected">[% t("English") | html %]</option>
+                    <option value="fr">[% t("French") | html %]</option>
+                    <option value="es">[% t("Spanish") | html %]</option>
+                </select>
+                <input type="text" id="searchTerm" name="searchTerm" class="search-input" />
+                <input type="button" class="btn btn-primary btn-sm search-button" value="[% t('Search') | html %]" onclick="searchAPI()" />
+            </div>
+        </fieldset>
+    </div>
+
+    <div class="page-section">
+        <div class="row">
+            <div class="col-sm-6">
+                <fieldset>
+                    <legend>[% t("Results") | html %]</legend>
+                    <div id="loadingIndicator" class="loading" style="display:none;">[% t("Loading...") | html %]</div>
+                    <div id="results-list" class="scroll-panel">
+                        <p class="hint">[% t("Enter a term above to search the AGROVOC thesaurus") | html %]</p>
+                    </div>
+                </fieldset>
+            </div>
+            <div class="col-sm-6">
+                <fieldset>
+                    <legend>[% t("Term details & browsing") | html %]</legend>
+                    <div id="details-view" class="scroll-panel">
+                        <div class="browsing-help">
+                            <p class="hint"><strong>[% t("How to browse:") | html %]</strong></p>
+                            <ul class="help-list">
+                                <li>[% t("Click any search result to see its broader, narrower, and related terms") | html %]</li>
+                                <li>[% t("Click any term here to browse on from that term") | html %]</li>
+                                <li>[% t("Use 'Select' to add a term to your selection") | html %]</li>
+                            </ul>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-section">
+        <fieldset>
+            <legend>[% t("Selected terms") | html %] (<span id="selected-count">0</span>)</legend>
+            <div id="selected-terms-list" class="selected-panel">
+                <div class="selection-help">
+                    <p class="hint">[% t("Selected terms will appear here") | html %]</p>
+                    <div class="workflow-info">
+                        <p><strong>[% t("Workflow options:") | html %]</strong></p>
+                        <ul class="workflow-list">
+                            <li><strong>[% t("Replace field") | html %]:</strong> [% t("Replaces the current MARC field with one selected term") | html %]</li>
+                            <li><strong>[% t("Create new fields") | html %]:</strong> [% t("Creates new MARC fields for all selected terms") | html %]</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+
+    <nav class="navbar navbar-default fixed-bottom">
+        <div class="container-fluid">
+            <fieldset class="action">
+                <input type="button" class="btn btn-primary btn-sm" value="[% t('Replace field') | html %]" onclick="replaceFieldFromURL()" id="replace-field-btn" disabled />
+                <input type="button" class="btn btn-success btn-sm" value="[% t('Create new fields') | html %]" onclick="createFieldFromURL()" id="create-fields-btn" disabled />
+                <button class="btn btn-default btn-sm close_window">[% t("Cancel") | html %]</button>
+            </fieldset>
+        </div>
+    </nav>
+</form>
+
+[% INCLUDE 'select2.inc' %]
+
+<style>
+[% INSERT "$PLUGIN_DIR/agrovoc_search.css" %]
+</style>
+
+<script>
+const AGROVOC_PLUGIN_URL = '[% plugin_url %]';
+[% INSERT "$PLUGIN_DIR/agrovoc_search.js" %]
+</script>
+
+[% INCLUDE 'popup-bottom.inc' %]
